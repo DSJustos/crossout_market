@@ -117,8 +117,8 @@ def process_paralelized_data(resp_item):
     last_5m_demoff = series_5m['demand_over_offer'].iloc[-1]
     demoff_diff, demoff_alpha, demoff_std = get_metrics(X=series_1H['index'], y=series_1H['demand_over_offer'], current_value=last_5m_demoff)
     
-    return_df = pd.DataFrame([[sell_diff, sell_alpha, demoff_diff, demoff_alpha, series_1H.buyorders.std(), series_5m.sellprice.quantile(0.8), series_5m.buyprice.quantile(0.2)]],
-                              columns=['sell_diff', 'sell_alpha', 'demoff_diff', 'demoff_alpha', 'buy_orders_std', 'sellprice_80percentile', 'buyprice_20percentile'])
+    return_df = pd.DataFrame([[sell_diff, sell_alpha, demoff_diff, demoff_alpha, series_5m.buyorders.std(), series_5m.sellprice.quantile(0.8), series_5m.buyprice.quantile(0.2), series_5m.buyprice.std()]],
+                              columns=['sell_diff', 'sell_alpha', 'demoff_diff', 'demoff_alpha', 'buy_orders_std', 'sellprice_80percentile', 'buyprice_20percentile', 'buy_price_std'])
     
     return return_df
 
@@ -126,7 +126,7 @@ def process_paralelized_data(resp_item):
 import functools
 
 def parallelized_get_tseries_params(item_id_list, t0_time, t_minus1week_time):
-    df_series = pd.DataFrame(columns=['sell_diff', 'sell_alpha', 'demoff_diff', 'demoff_alpha', 'buy_orders_std'])
+    df_series = pd.DataFrame(columns=['sell_diff', 'sell_alpha', 'demoff_diff', 'demoff_alpha', 'buy_orders_std', 'sellprice_80percentile', 'buyprice_20percentile', 'buy_price_std'])
     
     list_of_urls = generate_url_list(item_id_list, t0_time, t_minus1week_time)
     

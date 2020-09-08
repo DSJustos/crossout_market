@@ -35,7 +35,7 @@ if resp_items.status_code != 200:
     print("GET request for items failed")
 
 df_raw = pd.DataFrame.from_records(resp_items.json())
-df_items = df_raw[["id","name","sellOffers","formatSellPrice","buyOrders","formatBuyPrice","rarityName","categoryName","typeName","faction",
+df_items = df_raw[["id","name","sellOffers","formatSellPrice","buyOrders","formatBuyPrice","rarityName","categoryName","typeName","faction","craftable",
                      "formatCraftingSellSum", # comprar os components imediatamente
                      "formatCraftingBuySum", # comprar os components por order
                      "formatMargin", # margem, assumindo compra e venda por orders ao preço atual tendo em conta a taxa (flipping)
@@ -77,16 +77,22 @@ start = time.time()
 ###############################################################################
 print("\nRunning parallelized time series extraction...")
 current_time = int(time.time())
-t_minus1week = int(current_time - 604800)
+t_minus1week = int(current_time - 604800) # 7days = 604800 ; 3days = 259200
     
 df_tseries = tseries.parallelized_get_tseries_params(item_id_list=df_filtered['id'].tolist(), t0_time=current_time, t_minus1week_time=t_minus1week)
 df_final = pd.concat([df_filtered.reset_index(drop=True), df_tseries], axis=1, sort=False)
-df_final['off_dem_abs'] = df_final.sellOffers - df_final.buyOrders
-df_mesmo_final = df_final[['name', 'formatBuyPrice', 'formatSellPrice', 'formatMargin', 'buy_orders_std', 'demoff_diff', 'buyprice_20percentile', 'sellprice_80percentile','off_dem_abs']]
+df_final.loc[:, 'percentual_pop_delta'] = (df_final.sellOffers - df_final.buyOrders)/df_final.buyOrders
+
+df_mesmo_final = df_final[['name', 'formatBuyPrice', 'formatSellPrice', 'formatMargin', 'buy_orders_std', 'percentual_pop_delta', 'buyprice_20percentile', 'sellprice_80percentile','craftable','buy_price_std']].copy()
+df_mesmo_final.loc[:,'abs_percentual_pop_delta'] = df_mesmo_final['percentual_pop_delta'].abs()
 df_mesmo_final.loc[:,'immediate_buy_margin'] = df_mesmo_final['sellprice_80percentile']*0.9 - df_mesmo_final['formatBuyPrice']
 df_mesmo_final.loc[:, 'week_buy_margin'] = df_mesmo_final['sellprice_80percentile']*0.9 - df_mesmo_final['buyprice_20percentile']
 df_mesmo_final.loc[:, 'ROI_immediate'] = df_mesmo_final['immediate_buy_margin']/df_mesmo_final['formatBuyPrice']
 df_mesmo_final.loc[:, 'ROI_weekly'] = df_mesmo_final['week_buy_margin']/df_mesmo_final['buyprice_20percentile']
+
+df_mesmo_final = df_mesmo_final[df_mesmo_final.ROI_immediate > 0]
+df_mesmo_final = df_mesmo_final[df_mesmo_final.abs_percentual_pop_delta < 0.35]
+
 print("Done!")
 end = time.time()
 print(f'Time elapsed: {round(end - start, 4)}s')

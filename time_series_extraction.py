@@ -99,7 +99,7 @@ def get_url(pbar, url):
 def process_paralelized_data(resp_item):
     df = pd.DataFrame.from_records(resp_item.json(), columns=['id','sellprice','buyprice','selloffers','buyorders','datetime','UNIX_TIMESTAMP'])
     
-    if len(df)==0: return pd.DataFrame(np.zeros(5), columns=['sell_diff', 'sell_alpha', 'demoff_diff', 'demoff_alpha', 'buy_orders_std'])
+    if len(df)==0: return pd.DataFrame(np.zeros((1,5)), columns=['sell_diff', 'sell_alpha', 'demoff_diff', 'demoff_alpha', 'buy_orders_std'])
     
     df = df.drop(columns=['UNIX_TIMESTAMP'])
     df.buyprice = df.buyprice/100
@@ -131,7 +131,7 @@ def parallelized_get_tseries_params(item_id_list, t0_time, t_minus1week_time):
     list_of_urls = generate_url_list(item_id_list, t0_time, t_minus1week_time)
     
     with tqdm(total=len(item_id_list)) as pbar:
-        with ThreadPoolExecutor(max_workers=8) as pool:
+        with ThreadPoolExecutor(max_workers=4) as pool:
             ret = list(pool.map(functools.partial(get_url, pbar), list_of_urls))
     
     for r in ret:
